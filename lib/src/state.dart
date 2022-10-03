@@ -128,6 +128,9 @@ abstract class C2State<T> extends State<ChipsChoice<T>> {
 
   /// Scroll to the selected choice item
   void scrollToSelected() {
+    if (scrollController != null) {
+      return;
+    }
     final selectedContext = selectedKey?.currentContext;
     final renderObject = selectedContext?.findRenderObject();
     if (isScrollable && renderObject != null) {
@@ -147,7 +150,7 @@ abstract class C2State<T> extends State<ChipsChoice<T>> {
           )
         : choiceItems.isNotEmpty
             ? isScrollable
-                ? scrollController != null
+                ? (scrollController != null && widget.scrollToSelectedOnChanged)
                     ? listScrollableWithCustomScrollToPosition
                     : listScrollable
                 : listWrapped
