@@ -267,10 +267,11 @@ class ChipsChoice<T> extends StatefulWidget {
     this.scrollToSelectedOnChanged = false,
     this.itemScrollController,
     this.itemPositionsListener,
-  })  : assert(
-          choiceItems.isNotEmpty || choiceLoader != null,
-          'One of the parameters must be provided',
-        ),
+  })  :
+        // assert(
+        //   choiceItems.isNotEmpty || choiceLoader != null,
+        //   'One of the parameters must be provided',
+        // ),
         isMultiChoice = false,
         singleValue = value,
         singleOnChanged = onChanged,
@@ -398,10 +399,11 @@ class ChipsChoice<T> extends StatefulWidget {
     this.scrollToSelectedOnChanged = false,
     this.itemScrollController,
     this.itemPositionsListener,
-  })  : assert(
-          choiceItems.isNotEmpty || choiceLoader != null,
-          'One of the parameters must be provided',
-        ),
+  })  :
+        // assert(
+        //   choiceItems.isNotEmpty || choiceLoader != null,
+        //   'One of the parameters must be provided',
+        // ),
         isMultiChoice = true,
         multiValue = value,
         multiOnChanged = onChanged,
