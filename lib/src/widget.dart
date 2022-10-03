@@ -1,13 +1,15 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'choice_style.dart';
-import 'choice_item.dart';
-import 'types.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
+
 import 'chip.dart';
+import 'choice_item.dart';
+import 'choice_style.dart';
+import 'types.dart';
 
 part 'state.dart';
-part 'state_single.dart';
 part 'state_multi.dart';
+part 'state_single.dart';
 part 'utils.dart';
 
 /// Easy way to provide a single or multiple choice chips
@@ -46,7 +48,7 @@ class ChipsChoice<T> extends StatefulWidget {
   final bool wrapped;
 
   /// Padding of the list container
-  final EdgeInsetsGeometry? padding;
+  final EdgeInsets? padding;
 
   /// The direction to use as the main axis
   final Axis direction;
@@ -138,6 +140,12 @@ class ChipsChoice<T> extends StatefulWidget {
 
   /// scroll to selected value on external value changed
   final bool scrollToSelectedOnChanged;
+
+  // custom position scroll behavior
+  final ItemScrollController? itemScrollController;
+
+  // custom position scroll listener
+  final ItemPositionsListener? itemPositionsListener;
 
   /// Constructor for single choice
   ///
@@ -257,6 +265,8 @@ class ChipsChoice<T> extends StatefulWidget {
     this.trailing,
     this.scrollController,
     this.scrollToSelectedOnChanged = false,
+    this.itemScrollController,
+    this.itemPositionsListener,
   })  : assert(
           choiceItems.isNotEmpty || choiceLoader != null,
           'One of the parameters must be provided',
@@ -386,6 +396,8 @@ class ChipsChoice<T> extends StatefulWidget {
     this.trailing,
     this.scrollController,
     this.scrollToSelectedOnChanged = false,
+    this.itemScrollController,
+    this.itemPositionsListener,
   })  : assert(
           choiceItems.isNotEmpty || choiceLoader != null,
           'One of the parameters must be provided',
@@ -398,23 +410,19 @@ class ChipsChoice<T> extends StatefulWidget {
         super(key: key);
 
   /// Default padding for scrollable list
-  static final EdgeInsetsGeometry defaultScrollablePadding =
-      const EdgeInsets.symmetric(horizontal: 10);
+  static final EdgeInsets defaultScrollablePadding = const EdgeInsets.symmetric(horizontal: 10);
 
   /// Default padding for wrapped list
-  static final EdgeInsetsGeometry defaultWrappedPadding =
-      const EdgeInsets.fromLTRB(15, 10, 15, 10);
+  static final EdgeInsets defaultWrappedPadding = const EdgeInsets.fromLTRB(15, 10, 15, 10);
 
   /// Default padding for spinner and placeholder
-  static final EdgeInsetsGeometry defaultPadding = const EdgeInsets.all(20);
+  static final EdgeInsets defaultPadding = const EdgeInsets.all(20);
 
   /// Default chip margin in wrapped list
-  static final EdgeInsetsGeometry defaultWrappedChipMargin =
-      const EdgeInsets.all(0);
+  static final EdgeInsets defaultWrappedChipMargin = const EdgeInsets.all(0);
 
   /// Default chip margin in scrollable list
-  static final EdgeInsetsGeometry defaultScrollableChipMargin =
-      const EdgeInsets.all(5);
+  static final EdgeInsets defaultScrollableChipMargin = const EdgeInsets.all(5);
 
   /// Default placeholder string
   static final String defaultPlaceholder = 'Empty choice items';

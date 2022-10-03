@@ -18,9 +18,7 @@ abstract class C2State<T> extends State<ChipsChoice<T>> {
   get onChanged;
 
   /// Default chip margin
-  EdgeInsetsGeometry get defaultChipMargin => isScrollable
-      ? ChipsChoice.defaultScrollableChipMargin
-      : ChipsChoice.defaultWrappedChipMargin;
+  EdgeInsetsGeometry get defaultChipMargin => isScrollable ? ChipsChoice.defaultScrollableChipMargin : ChipsChoice.defaultWrappedChipMargin;
 
   /// Default style for unselected choice item
   C2ChoiceStyle get defaultChoiceStyle => C2ChoiceStyle(
@@ -31,8 +29,7 @@ abstract class C2State<T> extends State<ChipsChoice<T>> {
   C2ChoiceStyle get defaultActiveChoiceStyle => defaultChoiceStyle;
 
   /// Placeholder string
-  String get placeholder =>
-      widget.placeholder ?? ChipsChoice.defaultPlaceholder;
+  String get placeholder => widget.placeholder ?? ChipsChoice.defaultPlaceholder;
 
   /// Choice items
   List<C2Choice<T>> choiceItems = [];
@@ -83,8 +80,7 @@ abstract class C2State<T> extends State<ChipsChoice<T>> {
       initController();
     }
 
-    if (!listEquals(oldWidget.choiceItems, widget.choiceItems) ||
-        oldWidget.choiceLoader != widget.choiceLoader) {
+    if (!listEquals(oldWidget.choiceItems, widget.choiceItems) || oldWidget.choiceLoader != widget.choiceLoader) {
       loadChoiceItems();
     }
   }
@@ -94,11 +90,7 @@ abstract class C2State<T> extends State<ChipsChoice<T>> {
   }
 
   void initController() {
-    setState(() => {
-          scrollController = isScrollable
-              ? (widget.scrollController ?? ScrollController())
-              : null
-        });
+    setState(() => {scrollController = isScrollable ? (widget.scrollController ?? ScrollController()) : null});
   }
 
   /// load the choice items
@@ -145,8 +137,7 @@ abstract class C2State<T> extends State<ChipsChoice<T>> {
 
   @override
   Widget build(BuildContext context) {
-    final EdgeInsetsGeometry padding =
-        widget.padding ?? ChipsChoice.defaultPadding;
+    final EdgeInsetsGeometry padding = widget.padding ?? ChipsChoice.defaultPadding;
     return loading == true
         ? C2Spinner(
             padding: padding,
@@ -156,7 +147,9 @@ abstract class C2State<T> extends State<ChipsChoice<T>> {
           )
         : choiceItems.isNotEmpty
             ? isScrollable
-                ? listScrollable
+                ? scrollController != null
+                    ? listScrollableWithCustomScrollToPosition
+                    : listScrollable
                 : listWrapped
             : error.isNotEmpty
                 ? widget.errorBuilder?.call(context) ??
@@ -194,6 +187,19 @@ abstract class C2State<T> extends State<ChipsChoice<T>> {
         mainAxisSize: widget.mainAxisSize,
         children: choiceChips,
       ),
+    );
+  }
+
+  /// the scrollable list
+  Widget get listScrollableWithCustomScrollToPosition {
+    return ScrollablePositionedList.builder(
+      itemCount: choiceChips.length,
+      itemBuilder: (context, index) => choiceChips[index],
+      itemScrollController: widget.itemScrollController,
+      itemPositionsListener: widget.itemPositionsListener,
+      padding: widget.padding ?? ChipsChoice.defaultScrollablePadding,
+      scrollDirection: widget.direction,
+      physics: widget.scrollPhysics,
     );
   }
 
@@ -239,16 +245,10 @@ abstract class C2State<T> extends State<ChipsChoice<T>> {
     ChipThemeData chipTheme,
   ) {
     final data = choiceItems[i];
-    final selected = isMultiChoice
-        ? widget.multiValue.contains(data.value)
-        : widget.singleValue == data.value;
+    final selected = isMultiChoice ? widget.multiValue.contains(data.value) : widget.singleValue == data.value;
     final item = data.copyWith(
       style: defaultChoiceStyle.merge(widget.choiceStyle).merge(data.style),
-      activeStyle: defaultActiveChoiceStyle
-          .merge(widget.choiceStyle)
-          .merge(data.style)
-          .merge(widget.choiceActiveStyle)
-          .merge(data.activeStyle),
+      activeStyle: defaultActiveChoiceStyle.merge(widget.choiceStyle).merge(data.style).merge(widget.choiceActiveStyle).merge(data.activeStyle),
       selected: selected,
       select: (selected) => select(data.value, selected: selected),
     );
