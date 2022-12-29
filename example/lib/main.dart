@@ -1,3 +1,4 @@
+import 'package:animated_checkmark/animated_checkmark.dart';
 import 'package:chips_choice/chips_choice.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -17,7 +18,7 @@ class MyApp extends StatelessWidget {
           brightness: Brightness.light,
           seedColor: Colors.red,
         ),
-        materialTapTargetSize: MaterialTapTargetSize.padded,
+        // materialTapTargetSize: MaterialTapTargetSize.padded,
       ),
       dark: ThemeData(
         brightness: Brightness.dark,
@@ -27,7 +28,7 @@ class MyApp extends StatelessWidget {
         ),
         toggleableActiveColor: Colors.red,
         visualDensity: VisualDensity.adaptivePlatformDensity,
-        materialTapTargetSize: MaterialTapTargetSize.padded,
+        // materialTapTargetSize: MaterialTapTargetSize.padded,
       ),
       builder: (context, theme) {
         return MaterialApp(
@@ -90,6 +91,7 @@ class MyHomePageState extends State<MyHomePage> {
         source: res.data['results'],
         value: (index, item) => item['email'],
         label: (index, item) => item['name']['first'] + ' ' + item['name']['last'],
+        avatarImage: (index, item) => NetworkImage(item['picture']['thumbnail']),
         meta: (index, item) => item,
       )..insert(0, const C2Choice<String>(value: 'all', label: 'All'));
     } on DioError catch (e) {
@@ -134,16 +136,13 @@ class MyHomePageState extends State<MyHomePage> {
                         label: (i, v) => v,
                         tooltip: (i, v) => v,
                       ),
-                      // choiceStyle: const C2ChoiceStyle(
-                      //   appearance: C2ChipType.elevated,
-                      // ),
-                      choiceActiveStyle: C2ChoiceStyle(
-                        appearance: C2ChipType.elevated,
-                        color: Theme.of(context).colorScheme.primary,
-                        borderRadius: const BorderRadius.all(
-                          Radius.circular(5),
+                      choiceCheckmark: true,
+                      choiceStyle: C2ChipStyle.filled(
+                        selectedStyle: const C2ChipStyle(
+                          borderRadius: BorderRadius.all(
+                            Radius.circular(25),
+                          ),
                         ),
-                        showCheckmark: true,
                       ),
                     ),
                   ),
@@ -158,10 +157,8 @@ class MyHomePageState extends State<MyHomePage> {
                         label: (i, v) => v,
                         tooltip: (i, v) => v,
                       ),
-                      choiceStyle: const C2ChoiceStyle(
-                        appearance: C2ChipType.outlined,
-                        showCheckmark: true,
-                      ),
+                      choiceCheckmark: true,
+                      choiceStyle: C2ChipStyle.outlined(),
                     ),
                   ),
                   Content(
@@ -174,18 +171,21 @@ class MyHomePageState extends State<MyHomePage> {
                         value: (i, v) => i,
                         label: (i, v) => v,
                         tooltip: (i, v) => v,
+                        delete: (i, v) => () {
+                          setState(() => options.removeAt(i));
+                        },
                       ),
-                      choiceStyle: const C2ChoiceStyle(
-                        borderRadius: BorderRadius.all(
+                      choiceStyle: C2ChipStyle.toned(
+                        borderRadius: const BorderRadius.all(
                           Radius.circular(5),
                         ),
                       ),
                       leading: IconButton(
                         tooltip: 'Add Choice',
                         icon: const Icon(Icons.add_box_rounded),
-                        onPressed: () => setState(() => options.add(
-                              'Opt #${options.length + 1}',
-                            )),
+                        onPressed: () => setState(
+                          () => options.add('Opt #${options.length + 1}'),
+                        ),
                       ),
                       trailing: IconButton(
                         tooltip: 'Remove Choice',
@@ -206,9 +206,9 @@ class MyHomePageState extends State<MyHomePage> {
                         label: (i, v) => v,
                         tooltip: (i, v) => v,
                       ),
-                      wrapped: true,
+                      choiceCheckmark: true,
                       textDirection: TextDirection.rtl,
-                      choiceActiveStyle: const C2ChoiceStyle(showCheckmark: true),
+                      wrapped: true,
                     ),
                   ),
                   Content(
@@ -239,20 +239,16 @@ class MyHomePageState extends State<MyHomePage> {
                         tooltip: (i, v) => v,
                         style: (i, v) {
                           if (['Science', 'Politics', 'News', 'Tech'].contains(v)) {
-                            return const C2ChoiceStyle(
-                              borderRadius: BorderRadius.all(Radius.circular(5)),
-                              showCheckmark: false,
+                            return C2ChipStyle.toned(
+                              borderRadius: const BorderRadius.all(
+                                Radius.circular(5),
+                              ),
                             );
                           }
                           return null;
                         },
-                        activeStyle: (i, v) {
-                          if (['Science', 'Politics', 'News', 'Tech'].contains(v)) {
-                            return const C2ChoiceStyle(brightness: Brightness.dark);
-                          }
-                          return null;
-                        },
                       ),
+                      choiceStyle: C2ChipStyle.filled(),
                       wrapped: true,
                     ),
                   ),
@@ -267,18 +263,10 @@ class MyHomePageState extends State<MyHomePage> {
                         label: (i, v) => v,
                         tooltip: (i, v) => v,
                       )..insert(0, const C2Choice<int>(value: -1, label: 'All')),
-                      choiceStyle: C2ChoiceStyle(
-                        showCheckmark: false,
-                        labelStyle: const TextStyle(fontSize: 20),
+                      choiceStyle: C2ChipStyle.filled(
+                        foregroundStyle: const TextStyle(fontSize: 20),
                         borderRadius: const BorderRadius.all(Radius.circular(5)),
-                        borderColor: Colors.blueGrey.withOpacity(.5),
-                      ),
-                      choiceActiveStyle: const C2ChoiceStyle(
-                        appearance: C2ChipType.elevated,
-                        borderShape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(20)),
-                          side: BorderSide(color: Colors.red),
-                        ),
+                        selectedStyle: C2ChipStyle.filled(),
                       ),
                     ),
                   ),
@@ -293,11 +281,12 @@ class MyHomePageState extends State<MyHomePage> {
                             padding: EdgeInsets.all(20),
                             child: Center(
                               child: SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  )),
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
                             ),
                           );
                         } else {
@@ -306,22 +295,11 @@ class MyHomePageState extends State<MyHomePage> {
                               value: user,
                               onChanged: (val) => setState(() => user = val),
                               choiceItems: snapshot.data ?? [],
-                              choiceStyle: const C2ChoiceStyle(
-                                color: Colors.blueGrey,
-                                appearance: C2ChipType.elevated,
-                                margin: EdgeInsets.all(5),
-                                showCheckmark: false,
+                              choiceStyle: C2ChipStyle.filled(
+                                selectedStyle: const C2ChipStyle(
+                                  backgroundColor: Colors.green,
+                                ),
                               ),
-                              choiceActiveStyle: const C2ChoiceStyle(
-                                color: Colors.green,
-                                appearance: C2ChipType.elevated,
-                              ),
-                              choiceAvatarBuilder: (data, i) {
-                                if (data.meta == null) return null;
-                                return CircleAvatar(
-                                  backgroundImage: NetworkImage(data.meta['picture']['thumbnail']),
-                                );
-                              },
                             );
                           } else {
                             return Container(
@@ -342,22 +320,16 @@ class MyHomePageState extends State<MyHomePage> {
                       value: user,
                       onChanged: (val) => setState(() => user = val),
                       choiceLoader: getUsers,
-                      choiceStyle: const C2ChoiceStyle(
-                        color: Colors.blueGrey,
-                        appearance: C2ChipType.elevated,
-                        margin: EdgeInsets.all(5),
-                        showCheckmark: false,
+                      choiceStyle: C2ChipStyle.filled(
+                        selectedStyle: const C2ChipStyle(
+                          backgroundColor: Colors.green,
+                        ),
                       ),
-                      choiceActiveStyle: const C2ChoiceStyle(
-                        color: Colors.green,
-                        appearance: C2ChipType.elevated,
-                      ),
-                      choiceAvatarBuilder: (data, i) {
+                      choiceLeadingBuilder: (data, i) {
                         if (data.meta == null) return null;
                         return CircleAvatar(
-                          backgroundImage: NetworkImage(
-                            data.meta['picture']['thumbnail'],
-                          ),
+                          maxRadius: 12,
+                          backgroundImage: data.avatarImage,
                         );
                       },
                     ),
@@ -395,14 +367,12 @@ class MyHomePageState extends State<MyHomePage> {
                                         label: (i, v) => v,
                                         tooltip: (i, v) => v,
                                       ),
-                                      choiceStyle: const C2ChoiceStyle(
-                                        color: Colors.indigo,
-                                        borderOpacity: .3,
-                                        appearance: C2ChipType.outlined,
-                                      ),
-                                      choiceActiveStyle: const C2ChoiceStyle(
-                                        color: Colors.indigo,
-                                        appearance: C2ChipType.elevated,
+                                      choiceStyle: C2ChipStyle.outlined(
+                                        borderWidth: 2,
+                                        selectedStyle: const C2ChipStyle(
+                                          borderColor: Colors.green,
+                                          foregroundColor: Colors.green,
+                                        ),
                                       ),
                                       wrapped: true,
                                     ),
@@ -532,31 +502,33 @@ class CustomChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return AnimatedContainer(
       width: width,
       height: height,
       margin: margin ?? const EdgeInsets.symmetric(vertical: 15, horizontal: 5),
       duration: const Duration(milliseconds: 300),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: selected ? (color ?? Colors.green) : Colors.transparent,
+        color: selected ? (color ?? Colors.green) : theme.unselectedWidgetColor.withOpacity(.12),
         borderRadius: BorderRadius.all(Radius.circular(selected ? 25 : 10)),
         border: Border.all(
-          color: selected ? (color ?? Colors.green) : Colors.grey,
+          color: selected ? (color ?? Colors.green) : theme.colorScheme.onSurface.withOpacity(.38),
           width: 1,
         ),
       ),
       child: InkWell(
+        borderRadius: BorderRadius.all(Radius.circular(selected ? 25 : 10)),
         onTap: () => onSelect(!selected),
         child: Stack(
           alignment: Alignment.center,
           children: <Widget>[
-            Visibility(
-              visible: selected,
-              child: const Icon(
-                Icons.check_circle_outline,
-                color: Colors.white,
-                size: 32,
-              ),
+            AnimatedCheckmark(
+              active: selected,
+              color: Colors.white,
+              size: const Size.square(32),
+              weight: 5,
+              duration: const Duration(milliseconds: 400),
             ),
             Positioned(
               left: 9,
@@ -567,7 +539,7 @@ class CustomChip extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: selected ? Colors.white : Colors.black45,
+                  color: selected ? Colors.white : theme.colorScheme.onSurface,
                 ),
               ),
             ),

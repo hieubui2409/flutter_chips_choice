@@ -21,12 +21,12 @@ abstract class C2State<T> extends State<ChipsChoice<T>> {
   EdgeInsetsGeometry get defaultChipMargin => isScrollable ? ChipsChoice.defaultScrollableChipMargin : ChipsChoice.defaultWrappedChipMargin;
 
   /// Default style for unselected choice item
-  C2ChoiceStyle get defaultChoiceStyle => C2ChoiceStyle(
+  C2ChipStyle get defaultChoiceStyle => C2ChipStyle.toned(
         margin: defaultChipMargin,
       );
 
   /// Default style for selected choice item
-  C2ChoiceStyle get defaultActiveChoiceStyle => defaultChoiceStyle;
+  C2ChipStyle get defaultActiveChoiceStyle => defaultChoiceStyle;
 
   /// Placeholder string
   String get placeholder => widget.placeholder ?? ChipsChoice.defaultPlaceholder;
@@ -47,12 +47,16 @@ abstract class C2State<T> extends State<ChipsChoice<T>> {
   /// Choice loader error
   String error = '';
 
-  late final ScrollController? scrollController;
+  ScrollController? _internalScrollController;
+  ScrollController? get scrollController {
+    return isScrollable ? (widget.scrollController ?? _internalScrollController) : null;
+  }
+
+  @protected
+  BuildContext? selectedContext;
 
   /// Function to select a value
   void select(T val, {bool selected = true});
-
-  late final GlobalKey? selectedKey;
 
   @override
   void setState(fn) {
@@ -63,35 +67,48 @@ abstract class C2State<T> extends State<ChipsChoice<T>> {
 
   @override
   void initState() {
+    initScrollController();
+    loadChoiceItems(ensureSelectedVisibility: true);
     super.initState();
+  }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      initController();
-      initSelectedKey();
-      loadChoiceItems(ensureSelectedVisibility: true);
-    });
+  @override
+  void dispose() {
+    disposeScrollController();
+    super.dispose();
   }
 
   @override
   void didUpdateWidget(ChipsChoice<T> oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
     if (oldWidget.scrollController != widget.scrollController) {
-      initController();
+      initScrollController();
     }
 
     if (!listEquals(oldWidget.choiceItems, widget.choiceItems) || oldWidget.choiceLoader != widget.choiceLoader) {
       loadChoiceItems();
     }
+
+    super.didUpdateWidget(oldWidget);
   }
 
-  void initSelectedKey() {
-    setState(() => selectedKey = isScrollable ? GlobalKey() : null);
+  @protected
+  void initScrollController() {
+    _internalScrollController = isScrollable && widget.scrollController == null ? ScrollController() : null;
+    scrollController?.addListener(didChangeScrollController);
   }
 
-  void initController() {
-    setState(() => {scrollController = isScrollable ? (widget.scrollController ?? ScrollController()) : null});
+  @protected
+  void didChangeScrollController() {
+    setState(() {});
   }
+
+  @protected
+  void disposeScrollController() {
+    scrollController?.removeListener(didChangeScrollController);
+    _internalScrollController?.dispose();
+  }
+
+  @protected
 
   /// load the choice items
   void loadChoiceItems({ensureSelectedVisibility = false}) async {
@@ -108,6 +125,7 @@ abstract class C2State<T> extends State<ChipsChoice<T>> {
     }
   }
 
+  @protected
   Future<void> loadAsyncChoiceItems() async {
     if (hasChoiceLoaderRun) return;
     try {
@@ -128,14 +146,12 @@ abstract class C2State<T> extends State<ChipsChoice<T>> {
 
   /// Scroll to the selected choice item
   void scrollToSelected() {
-    if (scrollController != null) {
-      return;
-    }
-    final selectedContext = selectedKey?.currentContext;
-    final renderObject = selectedContext?.findRenderObject();
-    if (isScrollable && renderObject != null) {
-      scrollController?.position.ensureVisible(renderObject);
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final renderObject = selectedContext?.findRenderObject();
+      if (isScrollable && renderObject != null) {
+        scrollController?.position.ensureVisible(renderObject);
+      }
+    });
   }
 
   @override
@@ -227,11 +243,9 @@ abstract class C2State<T> extends State<ChipsChoice<T>> {
 
   /// List of widget of the choice items
   List<Widget> get choiceChips {
-    final ThemeData appTheme = Theme.of(context);
-    final ChipThemeData chipTheme = ChipTheme.of(context);
     final choiceWidgets = List<Widget?>.generate(
       choiceItems.length,
-      (i) => choiceChip(i, appTheme, chipTheme),
+      (i) => choiceChip(i),
       growable: false,
     );
     return <Widget?>[
@@ -241,17 +255,16 @@ abstract class C2State<T> extends State<ChipsChoice<T>> {
     ].whereType<Widget>().toList();
   }
 
+  Widget choiceLabelBuilder(C2Choice<T> item, int i) {
+    return widget.choiceLabelBuilder?.call(item, i) ?? Text(item.label);
+  }
+
   /// Widget generator for choice items
-  Widget? choiceChip(
-    int i,
-    ThemeData appTheme,
-    ChipThemeData chipTheme,
-  ) {
+  Widget? choiceChip(int i) {
     final data = choiceItems[i];
     final selected = isMultiChoice ? widget.multiValue.contains(data.value) : widget.singleValue == data.value;
     final item = data.copyWith(
       style: defaultChoiceStyle.merge(widget.choiceStyle).merge(data.style),
-      activeStyle: defaultActiveChoiceStyle.merge(widget.choiceStyle).merge(data.style).merge(widget.choiceActiveStyle).merge(data.activeStyle),
       selected: selected,
       select: (selected) => select(data.value, selected: selected),
     );
@@ -263,25 +276,26 @@ abstract class C2State<T> extends State<ChipsChoice<T>> {
     return item.hidden == true
         ? null
         : Builder(
-            key: isSelectedTarget ? selectedKey : ValueKey(item.value),
+            key: ValueKey('${item.value}'),
             builder: (context) {
-              final chip = widget.choiceBuilder?.call(item, i) ??
-                  C2Chip(
-                    data: item,
-                    label: widget.choiceLabelBuilder?.call(item, i),
-                    avatar: widget.choiceAvatarBuilder?.call(item, i),
-                    appTheme: appTheme,
-                    chipTheme: chipTheme,
-                  );
-
-              if (item.tooltip != null) {
-                return Tooltip(
-                  message: item.tooltip,
-                  child: chip,
-                );
+              if (isSelectedTarget) {
+                selectedContext = context;
               }
-
-              return chip;
+              return widget.choiceBuilder?.call(item, i) ??
+                  C2Chip(
+                    label: choiceLabelBuilder.call(item, i),
+                    avatarImage: item.avatarImage,
+                    avatarText: item.avatarText,
+                    leading: widget.choiceLeadingBuilder?.call(item, i),
+                    trailing: widget.choiceTrailingBuilder?.call(item, i),
+                    checkmark: widget.choiceCheckmark,
+                    style: item.style,
+                    disabled: item.disabled,
+                    selected: item.selected,
+                    onSelected: item.select,
+                    onDeleted: item.delete,
+                    tooltip: item.tooltip,
+                  );
             },
           );
   }
